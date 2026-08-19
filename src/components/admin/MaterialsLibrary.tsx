@@ -19,6 +19,7 @@ import { MediaItem, MediaType } from '../../types';
 import { AudioRecordModal } from '../common/AudioRecordModal';
 import { VideoRecordModal } from '../common/VideoRecordModal';
 import { soundEngine } from '../../utils/audio';
+import { uploadMediaToBlob } from '../../services/blobStorageService';
 
 export const MaterialsLibrary: React.FC = () => {
   const { mediaItems, addMediaItem, deleteMediaItem } = useApp();
@@ -36,7 +37,7 @@ export const MaterialsLibrary: React.FC = () => {
     return matchesType && matchesSearch;
   });
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -44,39 +45,19 @@ export const MaterialsLibrary: React.FC = () => {
     if (file.type.startsWith('audio/')) mediaType = 'audio';
     else if (file.type.startsWith('video/')) mediaType = 'video';
 
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const url = event.target?.result as string;
-      await addMediaItem({
-        name: file.name.replace(/\.[^/.]+$/, ''),
-        type: mediaType,
-        url,
-        blobData: file,
-        size: file.size,
-      });
-      soundEngine.playCorrectBell();
-    };
-    reader.readAsDataURL(file);
+    const uploaded = await uploadMediaToBlob(file, file.name.replace(/\.[^/.]+$/, ''), mediaType);
+    await addMediaItem(uploaded);
+    soundEngine.playCorrectBell();
   };
 
   const handleAudioRecorded = async (result: { blob: Blob; url: string; duration: number; name: string }) => {
-    await addMediaItem({
-      name: result.name,
-      type: 'audio',
-      url: result.url,
-      blobData: result.blob,
-      duration: result.duration,
-    });
+    const uploaded = await uploadMediaToBlob(result.blob, result.name, 'audio', result.duration);
+    await addMediaItem(uploaded);
   };
 
   const handleVideoRecorded = async (result: { blob: Blob; url: string; duration: number; name: string }) => {
-    await addMediaItem({
-      name: result.name,
-      type: 'video',
-      url: result.url,
-      blobData: result.blob,
-      duration: result.duration,
-    });
+    const uploaded = await uploadMediaToBlob(result.blob, result.name, 'video', result.duration);
+    await addMediaItem(uploaded);
   };
 
   return (

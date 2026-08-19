@@ -1,6 +1,7 @@
-// IndexedDB and LocalStorage Service for Kid Phonics Quest
+// Dual-Layer Storage Service: Supabase PostgreSQL (Primary) + IndexedDB (Local Cache & Offline Fallback)
 
 import { KidProfile, MediaItem, Question, QuestionSheet, SheetAttempt } from '../types';
+import { supabaseService } from './supabaseService';
 
 const DB_NAME = 'KidPhonicsQuestDB';
 const DB_VERSION = 1;
@@ -15,7 +16,7 @@ class StorageService {
 
   private initDB(): Promise<boolean> {
     return new Promise((resolve) => {
-      if (!('indexedDB' in window)) {
+      if (typeof window === 'undefined' || !('indexedDB' in window)) {
         console.warn('IndexedDB not supported, fallback to memory/localStorage');
         resolve(false);
         return;
@@ -67,8 +68,12 @@ class StorageService {
     }
   }
 
-  // --- Media Items (Images, Audio blobs, Video blobs) ---
+  // --- Media Items (Images, Audio blobs, Video blobs, Vercel Blob URLs) ---
   async saveMedia(item: MediaItem): Promise<void> {
+    if (supabaseService.isConfigured()) {
+      await supabaseService.saveMedia(item);
+    }
+
     const store = await this.getStore('media', 'readwrite');
     if (store) {
       return new Promise((resolve) => {
@@ -80,14 +85,20 @@ class StorageService {
   }
 
   async getAllMedia(): Promise<MediaItem[]> {
+    if (supabaseService.isConfigured()) {
+      const remote = await supabaseService.getMedia();
+      if (remote && remote.length > 0) {
+        return remote;
+      }
+    }
+
     const store = await this.getStore('media', 'readonly');
     if (store) {
       return new Promise((resolve) => {
         const req = store.getAll();
         req.onsuccess = () => {
           const items = (req.result || []).map((m: MediaItem) => {
-            // Re-create object URL if blobData exists
-            if (m.blobData && !m.url.startsWith('data:')) {
+            if (m.blobData && !m.url.startsWith('data:') && !m.url.startsWith('http')) {
               try {
                 m.url = URL.createObjectURL(m.blobData);
               } catch (e) {
@@ -105,6 +116,10 @@ class StorageService {
   }
 
   async deleteMedia(id: string): Promise<void> {
+    if (supabaseService.isConfigured()) {
+      await supabaseService.deleteMedia(id);
+    }
+
     const store = await this.getStore('media', 'readwrite');
     if (store) {
       return new Promise((resolve) => {
@@ -117,6 +132,12 @@ class StorageService {
 
   // --- Kids Profiles ---
   async saveKids(kids: KidProfile[]): Promise<void> {
+    if (supabaseService.isConfigured()) {
+      for (const kid of kids) {
+        await supabaseService.saveKid(kid);
+      }
+    }
+
     localStorage.setItem('kpq_kids', JSON.stringify(kids));
     const store = await this.getStore('kids', 'readwrite');
     if (store) {
@@ -127,6 +148,14 @@ class StorageService {
   }
 
   async getKids(): Promise<KidProfile[] | null> {
+    if (supabaseService.isConfigured()) {
+      const remote = await supabaseService.getKids();
+      if (remote && remote.length > 0) {
+        localStorage.setItem('kpq_kids', JSON.stringify(remote));
+        return remote;
+      }
+    }
+
     const local = localStorage.getItem('kpq_kids');
     if (local) {
       try {
@@ -148,6 +177,12 @@ class StorageService {
 
   // --- Questions ---
   async saveQuestions(questions: Question[]): Promise<void> {
+    if (supabaseService.isConfigured()) {
+      for (const q of questions) {
+        await supabaseService.saveQuestion(q);
+      }
+    }
+
     localStorage.setItem('kpq_questions', JSON.stringify(questions));
     const store = await this.getStore('questions', 'readwrite');
     if (store) {
@@ -158,6 +193,14 @@ class StorageService {
   }
 
   async getQuestions(): Promise<Question[] | null> {
+    if (supabaseService.isConfigured()) {
+      const remote = await supabaseService.getQuestions();
+      if (remote && remote.length > 0) {
+        localStorage.setItem('kpq_questions', JSON.stringify(remote));
+        return remote;
+      }
+    }
+
     const local = localStorage.getItem('kpq_questions');
     if (local) {
       try {
@@ -179,6 +222,12 @@ class StorageService {
 
   // --- Question Sheets ---
   async saveSheets(sheets: QuestionSheet[]): Promise<void> {
+    if (supabaseService.isConfigured()) {
+      for (const s of sheets) {
+        await supabaseService.saveSheet(s);
+      }
+    }
+
     localStorage.setItem('kpq_sheets', JSON.stringify(sheets));
     const store = await this.getStore('sheets', 'readwrite');
     if (store) {
@@ -189,6 +238,14 @@ class StorageService {
   }
 
   async getSheets(): Promise<QuestionSheet[] | null> {
+    if (supabaseService.isConfigured()) {
+      const remote = await supabaseService.getSheets();
+      if (remote && remote.length > 0) {
+        localStorage.setItem('kpq_sheets', JSON.stringify(remote));
+        return remote;
+      }
+    }
+
     const local = localStorage.getItem('kpq_sheets');
     if (local) {
       try {
@@ -210,6 +267,10 @@ class StorageService {
 
   // --- Sheet Attempts / Progress History ---
   async saveAttempt(attempt: SheetAttempt): Promise<void> {
+    if (supabaseService.isConfigured()) {
+      await supabaseService.saveAttempt(attempt);
+    }
+
     const existing = await this.getAttempts();
     const filtered = existing.filter((a) => a.id !== attempt.id);
     const updated = [attempt, ...filtered];
@@ -222,6 +283,14 @@ class StorageService {
   }
 
   async getAttempts(): Promise<SheetAttempt[]> {
+    if (supabaseService.isConfigured()) {
+      const remote = await supabaseService.getAttempts();
+      if (remote && remote.length > 0) {
+        localStorage.setItem('kpq_attempts', JSON.stringify(remote));
+        return remote;
+      }
+    }
+
     const local = localStorage.getItem('kpq_attempts');
     if (local) {
       try {

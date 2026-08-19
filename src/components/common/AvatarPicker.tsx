@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { Camera, Image as ImageIcon, Upload, Check } from 'lucide-react';
 import { PRESET_AVATARS } from '../../data/seedData';
 import { soundEngine } from '../../utils/audio';
+import { uploadMediaToBlob } from '../../services/blobStorageService';
 
 interface AvatarPickerProps {
   currentAvatarUrl?: string;
@@ -19,17 +20,13 @@ export const AvatarPicker: React.FC<AvatarPickerProps> = ({
     isCustomPhoto && currentAvatarUrl ? currentAvatarUrl : null
   );
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const result = event.target?.result as string;
-        setPreviewCustom(result);
-        onSelectAvatar(result, true);
-        soundEngine.playTilePop();
-      };
-      reader.readAsDataURL(file);
+      const uploaded = await uploadMediaToBlob(file, `avatar-${Date.now()}`, 'image');
+      setPreviewCustom(uploaded.url);
+      onSelectAvatar(uploaded.url, true);
+      soundEngine.playTilePop();
     }
   };
 
