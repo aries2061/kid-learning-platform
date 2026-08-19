@@ -155,5 +155,6 @@ export interface KidProgressSummary {
   totalPointsEarned: number;
   totalBadgesEarned: number;
   earnedBadges: RewardBadge[];
+  unlockedBadges?: RewardBadge[];
   sheetAttempts: SheetAttempt[];
 }

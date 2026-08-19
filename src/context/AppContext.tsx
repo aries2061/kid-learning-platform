@@ -350,6 +350,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       totalPointsEarned,
       totalBadgesEarned: earnedBadgesMap.size,
       earnedBadges: Array.from(earnedBadgesMap.values()),
+      unlockedBadges: Array.from(earnedBadgesMap.values()),
       sheetAttempts: kidAttempts,
     };
   };

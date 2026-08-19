@@ -32,7 +32,9 @@ export const KidDashboard: React.FC = () => {
     );
   };
 
-  const unlockedBadgeIds = new Set(kidProgress?.unlockedBadges.map((b) => b.id) || []);
+  const unlockedBadgeIds = new Set(
+    (kidProgress?.earnedBadges || []).map((b) => b.id)
+  );
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6 w-full flex-1 flex flex-col lg:flex-row gap-6">
