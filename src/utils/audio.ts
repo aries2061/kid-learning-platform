@@ -1,4 +1,5 @@
 // Web Audio API Synthesizer and Audio Helper for Kid Learning Experience
+// Fully optimized for iPad Safari, iOS, macOS, Chrome, Edge, and Android
 
 class KidSoundEngine {
   private ctx: AudioContext | null = null;
@@ -7,14 +8,52 @@ class KidSoundEngine {
   private isMuted: boolean = false;
   private isBgmMuted: boolean = false;
   private currentAudioElement: HTMLAudioElement | null = null;
+  private isUnlocked: boolean = false;
 
-  private getContext(): AudioContext {
+  constructor() {
+    // Setup iOS / iPad Safari touch gesture audio unlock listener
+    if (typeof window !== 'undefined') {
+      const unlockListener = () => {
+        this.unlockAudioContext();
+        window.removeEventListener('touchstart', unlockListener);
+        window.removeEventListener('touchend', unlockListener);
+        window.removeEventListener('click', unlockListener);
+      };
+      window.addEventListener('touchstart', unlockListener, { passive: true });
+      window.addEventListener('touchend', unlockListener, { passive: true });
+      window.addEventListener('click', unlockListener, { passive: true });
+    }
+  }
+
+  public unlockAudioContext() {
+    try {
+      const ctx = this.getContext();
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+      // Play a tiny silent buffer on iOS Safari to unlock the audio output
+      if (!this.isUnlocked) {
+        const buffer = ctx.createBuffer(1, 1, 22050);
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(ctx.destination);
+        source.start(0);
+        this.isUnlocked = true;
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  public getContext(): AudioContext {
     if (!this.ctx) {
-      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const AudioCtx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       this.ctx = new AudioCtx();
     }
     if (this.ctx.state === 'suspended') {
-      this.ctx.resume();
+      this.ctx.resume().catch(() => {});
     }
     return this.ctx;
   }
@@ -23,11 +62,12 @@ class KidSoundEngine {
   playCorrectBell(starIndex = 0) {
     if (this.isMuted) return;
     try {
+      this.unlockAudioContext();
       const ctx = this.getContext();
       const now = ctx.currentTime;
 
       // Harmonious pleasant arpeggio (C-E-G-C)
-      const baseFreqs = [523.25, 659.25, 783.99, 1046.50, 1318.51];
+      const baseFreqs = [523.25, 659.25, 783.99, 1046.5, 1318.51];
       const pitchOffset = Math.min(starIndex * 0.1, 0.4);
 
       baseFreqs.slice(0, 3).forEach((freq, idx) => {
@@ -56,6 +96,7 @@ class KidSoundEngine {
   playIncorrectBuzzer() {
     if (this.isMuted) return;
     try {
+      this.unlockAudioContext();
       const ctx = this.getContext();
       const now = ctx.currentTime;
 
@@ -84,6 +125,7 @@ class KidSoundEngine {
   playTilePop() {
     if (this.isMuted) return;
     try {
+      this.unlockAudioContext();
       const ctx = this.getContext();
       const now = ctx.currentTime;
 
@@ -111,6 +153,7 @@ class KidSoundEngine {
   playPointTick() {
     if (this.isMuted) return;
     try {
+      this.unlockAudioContext();
       const ctx = this.getContext();
       const now = ctx.currentTime;
 
@@ -137,17 +180,17 @@ class KidSoundEngine {
   playCelebrationFanfare() {
     if (this.isMuted) return;
     try {
+      this.unlockAudioContext();
       const ctx = this.getContext();
       const now = ctx.currentTime;
 
-      // Joyful celebratory notes
       const notes = [
         { f: 523.25, t: 0.0, d: 0.15 },
         { f: 659.25, t: 0.15, d: 0.15 },
-        { f: 783.99, t: 0.30, d: 0.15 },
-        { f: 1046.50, t: 0.45, d: 0.45 },
-        { f: 880.00, t: 0.70, d: 0.15 },
-        { f: 1046.50, t: 0.90, d: 0.60 },
+        { f: 783.99, t: 0.3, d: 0.15 },
+        { f: 1046.5, t: 0.45, d: 0.45 },
+        { f: 880.0, t: 0.7, d: 0.15 },
+        { f: 1046.5, t: 0.9, d: 0.6 },
       ];
 
       notes.forEach(({ f, t, d }) => {
@@ -172,23 +215,88 @@ class KidSoundEngine {
     }
   }
 
-  // Play custom audio file (from URL or blob)
-  async playAudioUrl(url: string): Promise<void> {
-    if (!url) return;
-    return new Promise((resolve) => {
+  // Play custom audio file (from URL or blob) with iPad Safari fallback and Web Audio decoder
+  async playAudioUrl(url: string, fallbackText?: string): Promise<void> {
+    if (!url) {
+      if (fallbackText) await this.speakWord(fallbackText);
+      return;
+    }
+
+    this.unlockAudioContext();
+
+    return new Promise(async (resolve) => {
+      let resolved = false;
+      const safeResolve = () => {
+        if (!resolved) {
+          resolved = true;
+          resolve();
+        }
+      };
+
       try {
         if (this.currentAudioElement) {
           this.currentAudioElement.pause();
           this.currentAudioElement = null;
         }
-        const audio = new Audio(url);
+
+        const audio = new Audio();
         this.currentAudioElement = audio;
+
+        // Attributes for Safari iOS / iPadOS
+        audio.setAttribute('playsinline', 'true');
+        audio.setAttribute('webkit-playsinline', 'true');
+        audio.preload = 'auto';
+        audio.src = url;
         audio.volume = this.isMuted ? 0 : 0.9;
-        audio.onended = () => resolve();
-        audio.onerror = () => resolve();
-        audio.play().catch(() => resolve());
-      } catch {
-        resolve();
+
+        audio.onended = () => {
+          this.currentAudioElement = null;
+          safeResolve();
+        };
+
+        const tryWebAudioFallback = async () => {
+          try {
+            const res = await fetch(url);
+            const buf = await res.arrayBuffer();
+            const ctx = this.getContext();
+            const decoded = await ctx.decodeAudioData(buf);
+
+            const source = ctx.createBufferSource();
+            source.buffer = decoded;
+            const gain = ctx.createGain();
+            gain.gain.value = this.isMuted ? 0 : 0.9;
+            source.connect(gain);
+            gain.connect(ctx.destination);
+
+            source.onended = () => safeResolve();
+            source.start(0);
+          } catch (e) {
+            console.warn('Web Audio decode fallback failed, trying speech synthesis:', e);
+            if (fallbackText) {
+              await this.speakWord(fallbackText);
+            }
+            safeResolve();
+          }
+        };
+
+        audio.onerror = async () => {
+          this.currentAudioElement = null;
+          await tryWebAudioFallback();
+        };
+
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(async (playErr) => {
+            console.warn('HTMLAudioElement play() rejected on Safari:', playErr);
+            await tryWebAudioFallback();
+          });
+        }
+      } catch (err) {
+        console.warn('playAudioUrl unexpected error:', err);
+        if (fallbackText) {
+          await this.speakWord(fallbackText);
+        }
+        safeResolve();
       }
     });
   }
@@ -205,6 +313,14 @@ class KidSoundEngine {
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.rate = rate; // slightly slower for early readers
         utterance.pitch = 1.2; // friendly, cheerful pitch for kids
+
+        // Select cheerful English voice if available
+        const voices = window.speechSynthesis.getVoices();
+        const englishVoice = voices.find((v) => v.lang.startsWith('en') && (v.name.includes('Samantha') || v.name.includes('Karen') || v.name.includes('Google') || v.name.includes('Natural')));
+        if (englishVoice) {
+          utterance.voice = englishVoice;
+        }
+
         utterance.onend = () => resolve();
         utterance.onerror = () => resolve();
         window.speechSynthesis.speak(utterance);
@@ -216,6 +332,7 @@ class KidSoundEngine {
 
   // Speak phonemes distinctly (e.g. "C... A... T... CAT!")
   async speakPhonicsBlend(letters: string[], fullWord: string) {
+    this.unlockAudioContext();
     for (const letter of letters) {
       this.playTilePop();
       await this.speakWord(letter.toLowerCase(), 0.8);
@@ -235,8 +352,9 @@ class KidSoundEngine {
     this.stopBackgroundMusic();
 
     try {
+      this.unlockAudioContext();
       const ctx = this.getContext();
-      const pentatonicScale = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25]; // C D E G A C
+      const pentatonicScale = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25]; // C D E G A C
       let noteIndex = 0;
       const melodyPattern = [0, 2, 3, 4, 3, 2, 1, 3, 4, 5, 4, 2, 0, 3, 2, 0];
 

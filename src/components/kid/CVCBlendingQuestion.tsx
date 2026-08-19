@@ -66,9 +66,9 @@ export const CVCBlendingQuestion: React.FC<CVCBlendingQuestionProps> = ({
   const handlePlayQuestionAudio = async () => {
     setIsPlayingAudio(true);
     if (question.questionVoiceUrl) {
-      await soundEngine.playAudioUrl(question.questionVoiceUrl);
+      await soundEngine.playAudioUrl(question.questionVoiceUrl, question.targetPrompt || `Spell the word ${targetWord}`);
     } else if (question.cvcAudioUrl) {
-      await soundEngine.playAudioUrl(question.cvcAudioUrl);
+      await soundEngine.playAudioUrl(question.cvcAudioUrl, targetWord);
     } else {
       await soundEngine.speakWord(targetWord);
     }

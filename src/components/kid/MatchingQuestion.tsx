@@ -54,9 +54,12 @@ export const MatchingQuestion: React.FC<MatchingQuestionProps> = ({
   const handlePlayAudio = async () => {
     setIsPlayingAudio(true);
     if (question.questionVoiceUrl) {
-      await soundEngine.playAudioUrl(question.questionVoiceUrl);
+      await soundEngine.playAudioUrl(
+        question.questionVoiceUrl,
+        question.questionText || question.targetPrompt || 'Match each letter to the correct word!'
+      );
     } else {
-      await soundEngine.speakWord(question.questionText || 'Match each letter to the correct word!');
+      await soundEngine.speakWord(question.questionText || question.targetPrompt || 'Match each letter to the correct word!');
     }
     setIsPlayingAudio(false);
   };

@@ -43,7 +43,10 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
   const handlePlayAudio = async () => {
     setIsPlayingAudio(true);
     if (question.questionVoiceUrl) {
-      await soundEngine.playAudioUrl(question.questionVoiceUrl);
+      await soundEngine.playAudioUrl(
+        question.questionVoiceUrl,
+        question.questionText || question.targetPrompt || 'Choose the correct answer!'
+      );
     } else {
       await soundEngine.speakWord(question.questionText || question.targetPrompt || 'Choose the correct answer!');
     }

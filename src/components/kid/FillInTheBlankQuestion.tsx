@@ -58,9 +58,12 @@ export const FillInTheBlankQuestion: React.FC<FillInTheBlankQuestionProps> = ({
   const handlePlayAudio = async () => {
     setIsPlayingAudio(true);
     if (question.questionVoiceUrl) {
-      await soundEngine.playAudioUrl(question.questionVoiceUrl);
+      await soundEngine.playAudioUrl(
+        question.questionVoiceUrl,
+        question.questionText || question.targetPrompt || `Find the missing letter for ${fullWord}`
+      );
     } else {
-      await soundEngine.speakWord(question.questionText || fullWord);
+      await soundEngine.speakWord(question.questionText || question.targetPrompt || fullWord);
     }
     setIsPlayingAudio(false);
   };
