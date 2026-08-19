@@ -7,7 +7,7 @@ import { KidProfileView } from './KidProfileView';
 import { soundEngine } from '../../utils/audio';
 
 export const KidDashboard: React.FC = () => {
-  const { sheets, currentKid, startPlayingSheet, getKidProgress, setShowKidLogin } = useApp();
+  const { sheets, currentKid, startPlayingSheet, getKidProgress, setShowKidLogin, setShowAdminLogin } = useApp();
   const [showProfileModal, setShowProfileModal] = useState(false);
 
   const kidProgress = currentKid ? getKidProgress(currentKid.id) : null;
@@ -247,6 +247,25 @@ export const KidDashboard: React.FC = () => {
               </div>
             );
           })}
+        </div>
+
+        {/* Teacher & Parent Quick Access Banner */}
+        <div className="mt-8 p-4 bg-white/80 backdrop-blur-xs rounded-2xl border-2 border-dashed border-sky-300 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+          <div>
+            <h5 className="font-extrabold text-sm text-slate-800 flex items-center justify-center sm:justify-start gap-1.5">
+              <span>👩‍🏫 Teacher & Parent Administration</span>
+            </h5>
+            <p className="text-xs text-slate-500">
+              Create and edit Phonics Questions, Question Sets (Sheets), Learning Materials, and inspect student progress.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowAdminLogin(true)}
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 active:translate-y-0.5 text-white font-extrabold text-xs rounded-xl shadow-sm transition-all whitespace-nowrap"
+          >
+            Open Admin Studio ⚙️
+          </button>
         </div>
       </section>
 

@@ -25,6 +25,7 @@ interface AppContextType {
   currentRole: 'kid' | 'admin' | null;
   currentKid: KidProfile | null;
   isAdminLoggedIn: boolean;
+  adminUser: { username: string; role: string } | null;
   loginAsAdmin: (user: string, pass: string) => boolean;
   logoutAdmin: () => void;
   loginAsKidBySerial: (serial: string) => KidProfile | null;
@@ -387,6 +388,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         currentRole,
         currentKid,
         isAdminLoggedIn,
+        adminUser: isAdminLoggedIn ? { username: 'admin', role: 'Teacher & Admin' } : null,
         loginAsAdmin,
         logoutAdmin,
         loginAsKidBySerial,

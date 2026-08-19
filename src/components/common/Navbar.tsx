@@ -170,24 +170,27 @@ export const Navbar: React.FC = () => {
 
           {/* Admin Switch / Login */}
           {isAdminLoggedIn ? (
-            <button
-              type="button"
-              onClick={logoutAdmin}
-              className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs sm:text-sm font-bold rounded-2xl shadow-sm transition-all"
-            >
-              <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">Exit Admin</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                id="admin-logout-btn"
+                onClick={logoutAdmin}
+                className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs sm:text-sm font-bold rounded-2xl shadow-sm transition-all"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="hidden sm:inline">Exit Admin</span>
+              </button>
+            </div>
           ) : (
             <button
               type="button"
               id="admin-login-nav-btn"
               onClick={() => setShowAdminLogin(true)}
-              className="bg-slate-200 p-2 sm:px-3 sm:py-2 rounded-xl hover:bg-slate-300 border border-slate-300 font-bold text-xs text-slate-700 flex items-center gap-1.5 transition-all"
-              title="Admin & Teacher Settings"
+              className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-2 rounded-2xl border-2 border-indigo-200 font-extrabold text-xs sm:text-sm flex items-center gap-1.5 shadow-xs transition-all hover:scale-102 active:scale-98"
+              title="Open Admin & Teacher Studio (Question Bank, Question Sets, Materials Library)"
             >
-              <span className="text-sm">⚙️</span>
-              <span className="hidden sm:inline">Admin</span>
+              <Shield className="w-4 h-4 text-indigo-600" />
+              <span>Admin Studio</span>
             </button>
           )}
         </div>
