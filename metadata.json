@@ -1,0 +1,6 @@
+{
+  "name": "Alphabet Blending Phonics Quest",
+  "description": "Interactive kid alphabet and CVC word blending game with audio recording, video materials library, custom kid profiles, question sets, reward badges, and parent progress tracking.",
+  "requestFramePermissions": ["camera", "microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
